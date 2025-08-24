@@ -244,6 +244,14 @@
         }
 
 
+    
+    /* Typing dots animation */
+    .typing-dots { display:flex; justify-content:center; gap:6px; margin-top:10px; }
+    .typing-dots div { width:8px; height:8px; background:#805ad5; border-radius:50%; animation:bounce 1.4s infinite; }
+    .typing-dots div:nth-child(2){ animation-delay:.2s; }
+    .typing-dots div:nth-child(3){ animation-delay:.4s; }
+    @keyframes bounce { 0%,80%,100%{ transform:scale(0);} 40%{ transform:scale(1);} }
+
     </style>
 </head>
 <body class="antialiased">
@@ -458,141 +466,6 @@
             });
         });
 
-        // --- Gemini API and UI Interaction (Event Delegation) ---
-        let quizData = [];
-        let currentQuestionIndex = 0;
-        let score = 0;
-
-        document.body.addEventListener('click', async function(event) {
-            // AI Submit Button (Non-Quiz)
-            if (event.target.classList.contains('ai-submit-btn')) {
-                const container = event.target.closest('.glassmorphism');
-                const inputElement = container.querySelector('textarea, input[type="text"]');
-                const outputElement = container.querySelector('.ai-output');
-                const inputValue = inputElement.value.trim();
-                if (!inputValue) return;
-                outputElement.innerHTML = '<p class="text-center">Generating response, please wait...</p>';
-                const featureTitle = container.querySelector('h2').textContent;
-                let prompt = createPrompt(featureTitle, inputValue);
-                const result = await callGeminiAPIEnhanced(prompt);
-                outputElement.innerHTML = marked.parse(result) + `<button class="copy-btn" title="Copy to Clipboard"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg></button>`;
-            }
-            // Enhance Prompt Button
-            if (event.target.classList.contains('enhance-prompt-btn')) {
-                const container = event.target.closest('.glassmorphism');
-                const inputElement = container.querySelector('textarea, input[type="text"]');
-                let userPrompt = inputElement.value.trim();
-                if (!userPrompt) return;
-                event.target.textContent = 'Enhancing...';
-                const enhanceMetaPrompt = `A CBSE student has asked the following question. Rephrase it to be a more detailed and effective prompt for an AI tutor. Return only the enhanced prompt. Original question: "${userPrompt}"`;
-                const enhancedPrompt = await callGeminiAPI(enhanceMetaPrompt);
-                inputElement.value = enhancedPrompt.replace(/["']/g, ""); // Clean up quotes
-                event.target.textContent = 'Enhance Prompt';
-            }
-            // Copy Button
-            if (event.target.closest('.copy-btn')) {
-                const button = event.target.closest('.copy-btn');
-                const outputElement = button.closest('.ai-output');
-                const textToCopy = outputElement.innerText;
-                
-                const textArea = document.createElement('textarea');
-                textArea.value = textToCopy;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    button.innerHTML = 'Copied!';
-                    setTimeout(() => {
-                        button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>`;
-                    }, 2000);
-                } catch (err) {
-                    console.error('Fallback: Oops, unable to copy', err);
-                }
-                document.body.removeChild(textArea);
-            }
-            // Generate Quiz Button
-            if (event.target.id === 'generate-quiz-btn') {
-                const topic = document.getElementById('quiz-topic-input').value.trim();
-                if (!topic) return;
-                const quizContainer = document.getElementById('quiz-container');
-                quizContainer.innerHTML = '<p class="text-center">Generating quiz, please wait...</p>';
-                const prompt = `Generate a 25-question multiple-choice quiz on the CBSE chapter "${topic}". For each question, provide 4 options (A, B, C, D), specify the correct answer letter, and a brief explanation for why it's correct. Format the entire output as a single JSON array, where each object has "question", "options" (an array of 4 strings), "answer" (the correct letter e.g., "C"), and "explanation".`;
-                const result = await callGeminiAPIEnhanced(prompt);
-                try {
-                    // Clean the result to be valid JSON
-                    const jsonString = result.replace(/```json|```/g, '').trim();
-                    quizData = JSON.parse(jsonString);
-                    currentQuestionIndex = 0;
-                    score = 0;
-                    displayQuestion();
-                } catch (e) {
-                    console.error("Failed to parse quiz JSON:", e);
-                    quizContainer.innerHTML = '<p class="text-center text-red-500">Sorry, there was an error creating the quiz. Please try a different topic.</p>';
-                }
-            }
-            // Quiz Option Click
-            if (event.target.classList.contains('quiz-option')) {
-                handleOptionSelect(event.target);
-            }
-            // Next Question Button
-            if (event.target.id === 'next-question-btn') {
-                currentQuestionIndex++;
-                displayQuestion();
-            }
-        });
-
-        function displayQuestion() {
-            const quizContainer = document.getElementById('quiz-container');
-            if (currentQuestionIndex < quizData.length) {
-                const q = quizData[currentQuestionIndex];
-                let optionsHTML = q.options.map((opt, index) => {
-                    const letter = String.fromCharCode(65 + index);
-                    return `<div class="quiz-option p-4 rounded-lg cursor-pointer" data-option="${letter}">${letter}. ${opt}</div>`;
-                }).join('');
-
-                quizContainer.innerHTML = `
-                    <div class="mb-4 text-gray-400">Question ${currentQuestionIndex + 1} of ${quizData.length}</div>
-                    <p class="text-xl font-semibold mb-6">${q.question}</p>
-                    <div class="space-y-4">${optionsHTML}</div>
-                    <div id="explanation-container" class="mt-6"></div>
-                `;
-            } else {
-                quizContainer.innerHTML = `
-                    <h3 class="text-2xl font-bold text-center">Quiz Complete!</h3>
-                    <p class="text-center text-xl mt-4">Your Final Score: ${score} out of ${quizData.length}</p>
-                `;
-            }
-        }
-
-        function handleOptionSelect(selectedOptionElement) {
-            const selectedAnswer = selectedOptionElement.dataset.option;
-            const correctAnswer = quizData[currentQuestionIndex].answer;
-            const options = document.querySelectorAll('.quiz-option');
-
-            options.forEach(opt => {
-                opt.classList.add('disabled');
-                if (opt.dataset.option === correctAnswer) {
-                    opt.classList.add('correct');
-                }
-            });
-
-            if (selectedAnswer === correctAnswer) {
-                score++;
-            } else {
-                selectedOptionElement.classList.add('incorrect');
-            }
-
-            const explanationContainer = document.getElementById('explanation-container');
-            explanationContainer.innerHTML = `
-                <div class="p-4 bg-gray-800 rounded-lg">
-                    <p class="font-bold">Explanation:</p>
-                    <p>${quizData[currentQuestionIndex].explanation}</p>
-                </div>
-                <button id="next-question-btn" class="w-full mt-6 btn-primary text-white font-bold py-3 px-8 rounded-lg">Next Question</button>
-            `;
-        }
-
-        
         function createPrompt(featureTitle, inputValue) {
             const prompts = {
                 'AI Doubt Solver': `You are an expert CBSE tutor for classes 9-12. A student asked: "${inputValue}". 
@@ -688,7 +561,7 @@ Create a practical, actionable study plan with clear timelines.`
 
 <script>
 // ===== OpenRouter Multi-Model Integration (GPT-5 + DeepSeek) =====
-const OPENROUTER_API_KEY = "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"; // <-- put new/regenerated key
+const OPENROUTER_API_KEY = "REPLACE_WITH_YOUR_OPENROUTER_KEY"; // <-- put new/regenerated key
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Feature -> Model routing
@@ -803,7 +676,7 @@ document.addEventListener("click", async (event) => {
 
 <script>
 // ===== OpenRouter Multi-Model Integration with SSE Streaming =====
-const OPENROUTER_API_KEY = "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"; // ⚠️ Replace with your new secure key
+const OPENROUTER_API_KEY = "sk-or-v1-REGENERATE_THIS_KEY"; // ⚠️ Replace with your new secure key
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const GPT5_FEATURES = new Set(["smart-notes", "question-answer-solution-bank", "homework-helper"]);
@@ -932,6 +805,111 @@ document.addEventListener("click", async (event) => {
   } finally {
     btn.disabled = false; btn.textContent = old;
   }
+});
+</script>
+
+
+<script>
+// ===== OpenRouter Multi-Model Integration with SSE Streaming =====
+const OPENROUTER_API_KEY = "sk-or-v1-YOUR_KEY_HERE"; // Replace with your OpenRouter key
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+const GPT5_FEATURES = new Set(["smart-notes", "homework-helper", "qa-bank"]);
+const MODEL_SLUGS = {
+  GPT: "openai/gpt-oss-20b:free",
+  DEEPSEEK: "deepseek/deepseek-chat-v3-0324:free"
+};
+
+// SSE streaming with typing dots
+async function callOpenRouterStream(model, prompt, outputEl) {
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      stream: true
+    })
+  });
+  if (!res.ok) { outputEl.innerHTML = "⚠️ Error"; return; }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  outputEl.innerHTML = `<div class='typing-dots'><div></div><div></div><div></div></div>`;
+  let buffer = "", firstChunk = true;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split("\n\n"); buffer = parts.pop();
+    for (const part of parts) {
+      if (part.startsWith("data: ")) {
+        const data = part.replace("data: ", "").trim();
+        if (data === "[DONE]") return;
+        try {
+          const json = JSON.parse(data);
+          const chunk = json.choices?.[0]?.delta?.content;
+          if (chunk) {
+            if (firstChunk) { outputEl.innerHTML = ""; firstChunk = false; }
+            outputEl.innerHTML += chunk;
+            outputEl.scrollTop = outputEl.scrollHeight;
+          }
+        } catch (e) { console.error("Stream parse error", e); }
+      }
+    }
+  }
+}
+
+// Pick model
+function pickModelForActiveFeature() {
+  const holder = document.querySelector("#ai-feature-container");
+  const active = holder?.getAttribute("data-active-feature") || "";
+  return GPT5_FEATURES.has(active) ? MODEL_SLUGS.GPT : MODEL_SLUGS.DEEPSEEK;
+}
+
+// Create prompt
+function createPrompt(featureTitle, inputValue) {
+  return `Answer in English only. ${inputValue}`;
+}
+
+// Ask button -> SSE
+document.addEventListener("click", async (event) => {
+  if (!event.target.classList?.contains("ai-submit-btn")) return;
+  const box = event.target.closest(".glassmorphism");
+  const inputEl = box?.querySelector("textarea, input[type='text']");
+  const outEl = box?.querySelector(".ai-output");
+  if (!inputEl || !outEl) return;
+  const q = (inputEl.value || "").trim();
+  if (!q) return;
+  outEl.innerHTML = "<div class='typing-dots'><div></div><div></div><div></div></div>";
+  const prompt = createPrompt("Feature", q);
+  const model = pickModelForActiveFeature();
+  try {
+    await callOpenRouterStream(model, prompt, outEl);
+  } catch (e) {
+    outEl.innerHTML = "⚠️ Error: Could not get response.";
+    console.error(e);
+  }
+});
+
+// Enhance Prompt -> DeepSeek only
+document.addEventListener("click", async (event) => {
+  if (!event.target.classList?.contains("enhance-prompt-btn")) return;
+  const btn = event.target;
+  const box = btn.closest(".glassmorphism");
+  const inputEl = box?.querySelector("textarea, input[type='text']");
+  if (!inputEl) return;
+  const raw = (inputEl.value || "").trim();
+  if (!raw) return;
+  btn.disabled = true; const old = btn.textContent; btn.textContent = "Enhancing...";
+  const meta = `Rephrase this into a clean CBSE exam-style question: ${raw}`;
+  const outEl = box?.querySelector(".ai-output"); if (outEl) outEl.innerHTML = "";
+  try {
+    await callOpenRouterStream(MODEL_SLUGS.DEEPSEEK, meta, inputEl);
+  } catch (e) { console.error(e); }
+  finally { btn.disabled = false; btn.textContent = old; }
 });
 </script>
 
