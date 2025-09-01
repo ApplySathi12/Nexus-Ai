@@ -1,0 +1,186 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Student Dashboard</title>
+    <!-- Razorpay Checkout Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0a0a1a; color: #f0f0f0; }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
+        .activity-item:not(:last-child) { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body>
+
+    <div id="loading-spinner" class="min-h-screen flex items-center justify-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>
+
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-gray-900/50 backdrop-blur-sm shadow-md p-4 flex justify-between items-center sticky top-0 z-20">
+            <a href="index.html" class="text-2xl font-bold text-white">NEXUS</a>
+            <div>
+                <span id="user-email" class="text-sm text-gray-400 mr-4"></span>
+                <button id="logout-btn" class="bg-red-600 text-white px-4 py-2 rounded-full hover:bg-red-700 transition text-sm font-semibold">Logout</button>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-6 py-12">
+            <div id="trial-banner" class="hidden"></div>
+             <div id="payment-message" class="hidden p-4 mb-8 rounded-lg text-center"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-8">
+                    <section id="subscription">
+                        <h2 class="text-2xl font-bold mb-4">My Plan</h2>
+                        <div class="glass-card p-6">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 id="plan-name" class="text-xl font-semibold text-indigo-300">Loading plan...</h3>
+                                    <p id="plan-description" class="text-gray-400 mt-2">Loading details...</p>
+                                </div>
+                                <button id="upgrade-btn" class="hidden bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 transition">Upgrade to Pro</button>
+                            </div>
+                        </div>
+                    </section>
+                    <section id="courses">
+                        <h2 class="text-2xl font-bold mb-4">My Courses</h2>
+                        <div id="courses-list" class="space-y-6">
+                            <p id="courses-loader" class="text-gray-400">Loading your courses...</p>
+                        </div>
+                    </section>
+                </div>
+                <div class="lg:col-span-1">
+                    <section id="activity">
+                        <h2 class="text-2xl font-bold mb-4">Real-Time Activity</h2>
+                        <div class="glass-card p-6">
+                            <div id="activity-list" class="space-y-4 max-h-96 overflow-y-auto">
+                                <p id="activity-loader" class="text-gray-400">Listening for activity...</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+        const supabaseUrl = 'https://mmmaqiqtvkjpwtdlqzrt.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIEAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // ... all other element selectors ...
+        const planNameEl = document.getElementById('plan-name');
+        const planDescriptionEl = document.getElementById('plan-description');
+        const upgradeBtn = document.getElementById('upgrade-btn');
+        const paymentMessageEl = document.getElementById('payment-message');
+        let currentUser = null;
+
+        async function fetchUserProfile(userId) {
+             const { data, error } = await supabase.from('profiles').select('subscription_plan, trial_ends_at').eq('id', userId).single();
+            if (error || !data) {
+                // ... handle error ...
+                return;
+            }
+            
+            const isPro = data.subscription_plan === 'Pro';
+            planNameEl.textContent = isPro ? 'Nexus Pro Plan' : (data.trial_ends_at ? 'Free Trial' : 'Free Plan');
+            planDescriptionEl.textContent = isPro ? 'You have unlimited access to all courses.' : 'Upgrade to Pro for full access.';
+            
+            if(!isPro) {
+                upgradeBtn.classList.remove('hidden');
+            } else {
+                upgradeBtn.classList.add('hidden');
+            }
+
+            // ... trial banner logic ...
+        }
+
+        upgradeBtn.addEventListener('click', async () => {
+            paymentMessageEl.classList.add('hidden');
+            upgradeBtn.disabled = true;
+            upgradeBtn.textContent = 'Processing...';
+
+            try {
+                // Step 1: Create an order from our secure Edge Function
+                const { data: orderData, error: orderError } = await supabase.functions.invoke('create-order', {
+                    body: { amount: 900, currency: 'INR' }, // amount in paisa (9 USD ~ 750 INR, let's use 900 for buffer)
+                });
+
+                if (orderError) throw orderError;
+                
+                // Step 2: Open Razorpay Checkout
+                const options = {
+                    key: 'rzp_test_RCMJ2iCXOAJJdu', // Your Public Key ID
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'Nexus Pro Subscription',
+                    description: 'Monthly Access to All Courses',
+                    order_id: orderData.id,
+                    handler: async function (response) {
+                        // Step 3: Verify the payment with another secure Edge Function
+                        const { data: verificationData, error: verificationError } = await supabase.functions.invoke('verify-payment', {
+                            body: {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            }
+                        });
+
+                        if (verificationError) throw verificationError;
+
+                        if (verificationData.status === 'success') {
+                            paymentMessageEl.textContent = 'Payment Successful! You are now a Pro member.';
+                            paymentMessageEl.className = 'bg-green-500/20 text-green-400 p-4 mb-8 rounded-lg text-center';
+                            await fetchUserProfile(currentUser.id); // Refresh user profile
+                        } else {
+                            throw new Error('Payment verification failed.');
+                        }
+                    },
+                    prefill: {
+                        email: currentUser.email,
+                    },
+                    theme: {
+                        color: '#4F46E5'
+                    }
+                };
+                
+                const rzp1 = new Razorpay(options);
+                rzp1.on('payment.failed', function (response) {
+                    paymentMessageEl.textContent = `Payment Failed: ${response.error.description}`;
+                    paymentMessageEl.className = 'bg-red-500/20 text-red-400 p-4 mb-8 rounded-lg text-center';
+                });
+                
+                rzp1.open();
+
+            } catch (error) {
+                 paymentMessageEl.textContent = `An error occurred: ${error.message}`;
+                 paymentMessageEl.className = 'bg-red-500/20 text-red-400 p-4 mb-8 rounded-lg text-center';
+            } finally {
+                paymentMessageEl.classList.remove('hidden');
+                upgradeBtn.disabled = false;
+                upgradeBtn.textContent = 'Upgrade to Pro';
+            }
+        });
+        
+        // --- Main Auth Logic ---
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (!session) {
+                // ... redirect logic ...
+            } else {
+                currentUser = session.user;
+                // ... rest of the dashboard loading logic ...
+                await fetchUserProfile(currentUser.id);
+                // ... fetch courses, activity etc. ...
+            }
+        });
+
+        // ... other functions (logout, fetch courses, etc.) ...
+    </script>
+</body>
+</html>

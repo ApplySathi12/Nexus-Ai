@@ -1,0 +1,107 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Contact Us</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0a0a1a; color: #f0f0f0; }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
+        .form-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .form-input:focus { outline: none; border-color: #6366f1; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="glass-card w-full max-w-lg p-8">
+        <a href="index.html" class="text-3xl font-bold text-white mb-6 block text-center">NEXUS</a>
+        <h2 class="text-2xl font-bold text-center text-white mb-2">Get in Touch</h2>
+        <p class="text-center text-gray-400 mb-8">We'd love to hear from you. Fill out the form below.</p>
+        
+        <div id="form-message" class="hidden p-3 rounded-md mb-4 text-sm"></div>
+
+        <form id="contact-form" class="space-y-6">
+            <div>
+                <label for="name" class="block mb-2 text-sm font-medium text-gray-300">Your Name</label>
+                <input type="text" id="name" class="form-input w-full rounded-lg p-3" required>
+            </div>
+            <div>
+                <label for="email" class="block mb-2 text-sm font-medium text-gray-300">Your Email</label>
+                <input type="email" id="email" class="form-input w-full rounded-lg p-3" required>
+            </div>
+            <div>
+                <label for="message" class="block mb-2 text-sm font-medium text-gray-300">Message</label>
+                <textarea id="message" rows="5" class="form-input w-full rounded-lg p-3" required></textarea>
+                <p id="word-count-error" class="text-xs text-red-400 mt-1 hidden">Message must be at least 10 words.</p>
+            </div>
+            <button id="submit-btn" type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition duration-300 flex items-center justify-center">
+                <span id="submit-text">Send Message</span>
+                <div id="submit-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+            </button>
+        </form>
+         <div class="text-center mt-6">
+            <a href="index.html" class="text-sm text-indigo-400 hover:underline">&larr; Back to Home</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+        const supabaseUrl = 'https://mmmaqiqtvkjpwtdlqzrt.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIEAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const form = document.getElementById('contact-form');
+        const messageTextarea = document.getElementById('message');
+        const wordCountError = document.getElementById('word-count-error');
+        const formMessage = document.getElementById('form-message');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitText = document.getElementById('submit-text');
+        const submitSpinner = document.getElementById('submit-spinner');
+
+        function validateMessage() {
+            const message = messageTextarea.value;
+            const words = message.trim().split(/\s+/).filter(Boolean);
+            if (words.length < 10) {
+                wordCountError.classList.remove('hidden');
+                return false;
+            }
+            wordCountError.classList.add('hidden');
+            return true;
+        }
+        
+        messageTextarea.addEventListener('input', validateMessage);
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!validateMessage()) return;
+
+            submitText.classList.add('hidden');
+            submitSpinner.classList.remove('hidden');
+            submitBtn.disabled = true;
+
+            const { data, error } = await supabase.functions.invoke('contact-form', {
+                body: { 
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    message: messageTextarea.value,
+                 },
+            });
+
+            submitText.classList.remove('hidden');
+            submitSpinner.classList.add('hidden');
+            submitBtn.disabled = false;
+
+            if (error) {
+                formMessage.textContent = 'Error: ' + error.message;
+                formMessage.className = 'bg-red-500/20 text-red-400 p-3 rounded-md mb-4 text-sm';
+            } else {
+                formMessage.textContent = 'Success! Your message has been sent.';
+                formMessage.className = 'bg-green-500/20 text-green-400 p-3 rounded-md mb-4 text-sm';
+                form.reset();
+            }
+            formMessage.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
