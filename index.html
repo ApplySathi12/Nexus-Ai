@@ -1,95 +1,149 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus - The Future of Learning</title>
+    <title>Nexus - 3D Learning Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0a0a1a; color: #f0f0f0; overflow-x: hidden; }
-        #bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-        .content-container { position: relative; z-index: 1; }
-        .hero-section { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a1a;
+            color: #f0f0f0;
+            overflow-x: hidden;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
     </style>
 </head>
-<body>
+<body class="antialiased">
+    <canvas id="bg-canvas"></canvas>
 
-    <canvas id="bg"></canvas>
-
-    <div class="content-container">
-        <!-- Header -->
-        <header class="absolute top-0 left-0 w-full z-10">
-            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-                <a href="index.html" class="text-3xl font-bold text-white">NEXUS</a>
-                <a href="auth.html" class="bg-indigo-600 text-white px-5 py-2 rounded-full hover:bg-indigo-700 transition duration-300 shadow-lg">Login / Sign Up</a>
+    <div class="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden" id="hero-section">
+        <header class="absolute top-0 left-0 right-0 p-4 z-10">
+            <nav class="container mx-auto flex justify-between items-center">
+                <a href="#" class="text-2xl font-bold">NEXUS</a>
+                <!-- This is the navigation for logged-out users -->
+                <div id="logged-out-nav" class="hidden flex items-center space-x-4">
+                    <a href="auth.html" class="text-gray-300 hover:text-white transition">Sign In</a>
+                    <a href="auth.html" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">Sign Up</a>
+                </div>
+                <!-- This navigation will appear for logged-in users -->
+                <div id="logged-in-nav" class="hidden flex items-center space-x-4">
+                    <a href="dashboard.html" class="text-gray-300 hover:text-white transition">Dashboard</a>
+                    <button id="signout-btn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">Sign Out</button>
+                </div>
             </nav>
         </header>
 
-        <main>
-            <!-- Hero Section -->
-            <section class="hero-section text-center">
-                <div class="container mx-auto px-6">
-                    <h1 class="text-4xl md:text-7xl font-extrabold text-white leading-tight mb-4">
-                        Welcome to <span class="text-indigo-400">NEXUS</span>
-                    </h1>
-                    <p class="mt-4 text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
-                        The central point where technology meets education. Redefining learning for Class 9 & 10.
-                    </p>
-                    <div class="mt-10">
-                        <a href="auth.html" class="bg-indigo-600 text-white text-lg font-semibold px-8 py-4 rounded-full hover:bg-indigo-700 transition duration-300 shadow-lg transform hover:scale-105">Get Started</a>
-                    </div>
-                </div>
-            </section>
-        </main>
-        
-        <!-- Footer -->
-        <footer class="fixed bottom-0 left-0 w-full pt-4 pb-6">
-            <div class="container mx-auto px-6 text-center text-gray-400">
-                <div class="flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-6 mb-4">
-                    <a href="terms.html" class="hover:text-white transition">Terms</a>
-                    <a href="privacy.html" class="hover:text-white transition">Privacy</a>
-                    <a href="contact.html" class="hover:text-white transition">Contact Us</a>
-                </div>
-                <p class="text-sm">&copy; 2025 Nexus. All Rights Reserved. | <a href="admin.html" class="hover:text-white text-xs">Admin</a></p>
-            </div>
-        </footer>
+        <div class="text-center z-10">
+            <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-4">
+                Unlock Your Potential with Nexus
+            </h1>
+            <p class="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+                Interactive 3D courses for Class 9th & 10th. Master complex topics with immersive learning experiences.
+            </p>
+            <a href="auth.html" id="get-started-btn" class="bg-indigo-600 text-white font-semibold px-8 py-4 rounded-lg text-lg hover:bg-indigo-700 transition-transform transform hover:scale-105">
+                Get Started
+            </a>
+        </div>
     </div>
-
+    
     <script type="module">
-        import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
-        // Same 3D background code as before...
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+        // --- SUPABASE CONFIG ---
+        const supabaseUrl = 'https://mmmaqiqtvkjpwtdlqzrt.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIEAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // --- DOM ELEMENTS ---
+        const loggedOutNav = document.getElementById('logged-out-nav');
+        const loggedInNav = document.getElementById('logged-in-nav');
+        const signOutBtn = document.getElementById('signout-btn');
+        const getStartedBtn = document.getElementById('get-started-btn');
+
+        // --- AUTHENTICATION LOGIC ---
+        const updateUserStatus = (user) => {
+            if (user) {
+                loggedOutNav.classList.add('hidden');
+                loggedInNav.classList.remove('hidden');
+                getStartedBtn.textContent = 'Go to Dashboard';
+                getStartedBtn.href = 'dashboard.html';
+            } else {
+                loggedOutNav.classList.remove('hidden');
+                loggedInNav.classList.add('hidden');
+                getStartedBtn.textContent = 'Get Started';
+                getStartedBtn.href = 'auth.html';
+            }
+        };
+        
+        const initializeAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            updateUserStatus(session?.user);
+
+            supabase.auth.onAuthStateChange((_event, session) => {
+                updateUserStatus(session?.user);
+            });
+        };
+        initializeAuth();
+
+        signOutBtn.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+        });
+
+        // --- 3D MODEL FROM YOUR FILE ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#bg'), alpha: true });
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas: document.getElementById('bg-canvas'), 
+            antialias: true, 
+            alpha: true 
+        });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         camera.position.setZ(5);
+        
         const geometry = new THREE.TorusKnotGeometry(1.5, 0.3, 100, 16);
         const material = new THREE.MeshStandardMaterial({ color: 0x4f46e5, roughness: 0.5, metalness: 0.8 });
         const shape = new THREE.Mesh(geometry, material);
         scene.add(shape);
+        
         const pointLight = new THREE.PointLight(0xffffff, 1.5);
         pointLight.position.set(5, 5, 5);
         const ambientLight = new THREE.AmbientLight(0x404040, 2);
         scene.add(pointLight, ambientLight);
+        
         let mouseX = 0, mouseY = 0;
         document.addEventListener('mousemove', e => {
             mouseX = (e.clientX / window.innerWidth) * 2 - 1;
             mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
         });
+        
         function animate() {
             requestAnimationFrame(animate);
             shape.rotation.x += 0.001;
             shape.rotation.y += 0.002;
+            
+            // Mouse interaction
             shape.rotation.y += mouseX * 0.005;
             shape.rotation.x += mouseY * 0.005;
+            
+            // Pulsating camera effect
             camera.position.z = 5 + Math.sin(Date.now() * 0.0002) * 0.5;
+            
             renderer.render(scene, camera);
         }
         animate();
+        
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
