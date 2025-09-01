@@ -7,16 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0a0a1a;
-            color: #f0f0f0;
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #0a0a1a; color: #f0f0f0; }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 <body class="antialiased">
@@ -26,124 +18,121 @@
         <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
     </div>
     
-    <!-- Main Dashboard Content -->
-    <div id="dashboard-content" class="hidden container mx-auto p-4 md:p-8">
-        <header class="flex justify-between items-center mb-8">
-            <a href="index.html" class="text-3xl font-bold">NEXUS</a>
-            <div class="flex items-center space-x-4">
-                <span id="user-email" class="text-gray-400"></span>
-                <button id="signout-btn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition text-sm">Sign Out</button>
-            </div>
-        </header>
-
-        <main>
-            <h1 class="text-4xl font-bold mb-8">Your Dashboard</h1>
-            
-            <!-- Subscription Status Section -->
-            <div id="subscription-status" class="glass-card rounded-lg p-6 mb-8">
-                <!-- Subscription status will be loaded here by JavaScript -->
-            </div>
-
-            <!-- Enrolled Courses Section -->
-            <h2 class="text-3xl font-bold mb-6">My Courses</h2>
-            <div id="courses-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Enrolled courses will be loaded here by JavaScript -->
-            </div>
-        </main>
+    <!-- Main Dashboard Container -->
+    <div id="dashboard-container" class="container mx-auto p-4 md:p-8">
+        <!-- Dashboard content or error message will be rendered here by JavaScript -->
     </div>
     
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
         
-        // --- SUPABASE CONFIG ---
         const supabaseUrl = 'https://mmmaqiqtvkjpwtdlqzrt.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIEAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // --- DOM ELEMENTS ---
         const loadingSpinner = document.getElementById('loading-spinner');
-        const dashboardContent = document.getElementById('dashboard-content');
-        const userEmailSpan = document.getElementById('user-email');
-        const signOutBtn = document.getElementById('signout-btn');
-        const subscriptionStatusDiv = document.getElementById('subscription-status');
-        const coursesContainer = document.getElementById('courses-container');
+        const dashboardContainer = document.getElementById('dashboard-container');
 
-        // --- RENDER FUNCTIONS ---
-        const renderSubscription = (profile) => {
-            if (profile && profile.subscription_plan) {
-                const plan = profile.subscription_plan;
-                let content = `
-                    <h3 class="text-xl font-semibold mb-2">Subscription Status</h3>
-                    <p class="text-3xl font-bold text-green-400">${plan} Plan</p>`;
-                if (plan === 'Free') {
-                    content += `<button class="mt-4 bg-indigo-600 text-white font-semibold px-5 py-2 rounded-lg hover:bg-indigo-700 transition">Upgrade to Pro</button>`;
-                }
-                subscriptionStatusDiv.innerHTML = content;
-            } else {
-                 subscriptionStatusDiv.innerHTML = `<p class="text-red-400">Could not load subscription details.</p>`;
+        const renderDashboard = (user, profile, enrolledCourses) => {
+            let subscriptionContent = `
+                <h3 class="text-xl font-semibold mb-2">Subscription Status</h3>
+                <p class="text-3xl font-bold text-green-400">${profile.subscription_plan} Plan</p>`;
+            if (profile.subscription_plan === 'Free') {
+                subscriptionContent += `<button class="mt-4 bg-indigo-600 text-white font-semibold px-5 py-2 rounded-lg hover:bg-indigo-700 transition">Upgrade to Pro</button>`;
             }
-        };
 
-        const renderCourses = (enrolledCourses) => {
-            coursesContainer.innerHTML = ''; 
+            let coursesContent = '';
             if (enrolledCourses && enrolledCourses.length > 0) {
                 enrolledCourses.forEach(item => {
                     const course = item.courses;
-                    if(course) {
-                        const courseCard = `
+                    if (course) {
+                        // NEW: Create buttons only if the links exist in the database
+                        const videoButton = course.video_url 
+                            ? `<a href="${course.video_url}" target="_blank" class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition block text-center">Watch Video</a>`
+                            : '';
+                        
+                        const materialsButton = course.materials_url
+                            ? `<a href="${course.materials_url}" download class="w-full bg-gray-600 text-white font-semibold py-2 rounded-lg hover:bg-gray-700 transition block text-center mt-2">Download Materials</a>`
+                            : '';
+
+                        coursesContent += `
                         <div class="glass-card rounded-lg p-6 flex flex-col justify-between">
                             <div>
                                 <h4 class="text-xl font-bold mb-2">${course.title}</h4>
                                 <p class="text-gray-400 text-sm mb-4">${course.description}</p>
                             </div>
-                            <button class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition mt-4">Start Learning</button>
+                            <div class="mt-4 space-y-2">
+                                ${videoButton}
+                                ${materialsButton}
+                            </div>
                         </div>`;
-                        coursesContainer.innerHTML += courseCard;
                     }
                 });
             } else {
-                coursesContainer.innerHTML = `<p class="text-gray-400 col-span-full">You are not enrolled in any courses yet.</p>`;
+                coursesContent = `<p class="text-gray-400 col-span-full">You are not enrolled in any courses yet.</p>`;
             }
+
+            dashboardContainer.innerHTML = `
+                <header class="flex justify-between items-center mb-8">
+                    <a href="index.html" class="text-3xl font-bold">NEXUS</a>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-gray-400">${user.email}</span>
+                        <button id="signout-btn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition text-sm">Sign Out</button>
+                    </div>
+                </header>
+                <main>
+                    <h1 class="text-4xl font-bold mb-8">Your Dashboard</h1>
+                    <div class="glass-card rounded-lg p-6 mb-8">${subscriptionContent}</div>
+                    <h2 class="text-3xl font-bold mb-6">My Courses</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">${coursesContent}</div>
+                </main>`;
+
+            document.getElementById('signout-btn').addEventListener('click', async () => {
+                await supabase.auth.signOut();
+                window.location.href = './index.html';
+            });
+        };
+        
+        const renderError = (error) => {
+             dashboardContainer.innerHTML = `
+                <div class="text-center py-20">
+                    <h1 class="text-2xl font-bold text-red-500">Oops! Something went wrong.</h1>
+                    <p class="text-gray-400 mt-2">We couldn't load your dashboard. Please try refreshing the page.</p>
+                    <p class="text-xs text-gray-600 mt-4 bg-gray-900 p-2 rounded">Error: ${error.message}</p>
+                </div>`;
         };
 
-        // --- MAIN LOGIC ---
-        const loadDashboard = async (user) => {
-            userEmailSpan.textContent = user.email;
+        const loadDashboardData = async (user) => {
+            try {
+                const [profileResponse, coursesResponse] = await Promise.all([
+                    supabase.from('profiles').select('subscription_plan').eq('id', user.id).single(),
+                    // UPDATED: Fetching the new URL columns
+                    supabase.from('user_courses').select('*, courses (title, description, video_url, materials_url)').eq('user_id', user.id)
+                ]);
 
-            // Fetch profile and courses in parallel for faster loading
-            const [profileResponse, coursesResponse] = await Promise.all([
-                supabase.from('profiles').select('subscription_plan').eq('id', user.id).single(),
-                supabase.from('user_courses').select(`*, courses (title, description)`).eq('user_id', user.id)
-            ]);
-            
-            if(profileResponse.error) console.error('Profile Error:', profileResponse.error);
-            renderSubscription(profileResponse.data);
+                if (profileResponse.error) throw profileResponse.error;
+                if (coursesResponse.error) throw coursesResponse.error;
+                
+                renderDashboard(user, profileResponse.data, coursesResponse.data);
 
-            if(coursesResponse.error) console.error('Courses Error:', coursesResponse.error);
-            renderCourses(coursesResponse.data);
-            
-            loadingSpinner.classList.add('hidden');
-            dashboardContent.classList.remove('hidden');
+            } catch (error) {
+                console.error('Dashboard Load Error:', error);
+                renderError(error);
+            } finally {
+                loadingSpinner.classList.add('hidden');
+            }
         };
 
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                await loadDashboard(session.user);
+                await loadDashboardData(session.user);
             } else {
-                // FIX: Changed to a relative path that works correctly
                 window.location.href = './auth.html';
             }
         };
 
         checkSession();
-
-        signOutBtn.addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            // FIX: Changed to a relative path that works correctly
-            window.location.href = './index.html';
-        });
-
     </script>
 </body>
 </html>
