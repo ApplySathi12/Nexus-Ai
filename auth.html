@@ -1,20 +1,54 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus - Login/Signup</title>
+    <title>Nexus - Authentication</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FingerprintJS Script -->
-    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0a0a1a; color: #f0f0f0; }
-        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
-        .form-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); transition: border-color 0.3s; }
-        .form-input:focus { outline: none; border-color: #6366f1; }
-        .tab-btn { background-color: transparent; border: 1px solid rgba(255, 255, 255, 0.2); }
-        .tab-btn.active { background-color: #4f46e5; border-color: #4f46e5; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a1a;
+            color: #f0f0f0;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        .form-input {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+        }
+        .tab-btn {
+            background-color: transparent;
+            border: none;
+            color: #a5b4fc;
+            padding: 0.75rem 1rem;
+            position: relative;
+        }
+        .tab-btn.active {
+            color: white;
+            font-weight: 600;
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #6366f1;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -23,13 +57,13 @@
 
     <div class="glass-card w-full max-w-md p-8">
         <div class="flex border-b border-gray-700 mb-6">
-            <button id="signin-tab-btn" class="tab-btn active w-1/2 py-3 font-semibold rounded-t-lg">Sign In</button>
-            <button id="signup-tab-btn" class="tab-btn w-1/2 py-3 font-semibold rounded-t-lg">Sign Up</button>
+            <button id="signin-tab-btn" class="tab-btn active">Sign In</button>
+            <button id="signup-tab-btn" class="tab-btn">Sign Up</button>
         </div>
         
-        <div id="form-message" class="hidden p-3 rounded-md mb-4 text-sm"></div>
+        <div id="form-message" class="hidden p-3 rounded-md mb-4 text-sm text-center"></div>
 
-        <!-- Sign In Form -->
+        <!-- Sign In Form (Default) -->
         <form id="signin-form" class="space-y-4">
             <div>
                 <label for="signin-email" class="block mb-2 text-sm font-medium text-gray-300">Email</label>
@@ -45,7 +79,7 @@
             <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition duration-300">Sign In</button>
         </form>
 
-        <!-- Sign Up Form -->
+        <!-- Sign Up Form (Hidden) -->
         <form id="signup-form" class="hidden space-y-4">
             <div>
                 <label for="signup-email" class="block mb-2 text-sm font-medium text-gray-300">Email</label>
@@ -55,20 +89,16 @@
                 <label for="signup-password" class="block mb-2 text-sm font-medium text-gray-300">Password</label>
                 <input type="password" id="signup-password" class="form-input w-full rounded-lg p-3" required>
             </div>
-            <p class="text-xs text-center text-gray-400">By creating an account, you agree to our 3-day free trial terms.</p>
-            <button type="submit" id="signup-btn" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition duration-300 flex justify-center items-center">
-                <span id="signup-btn-text">Create Free Trial Account</span>
-                <div id="signup-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-            </button>
+            <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition duration-300">Create Account</button>
         </form>
     </div>
 
     <!-- Forgot Password Modal -->
     <div id="forgot-password-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
         <div class="glass-card p-8 rounded-lg max-w-sm w-full relative">
-            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
             <h3 class="text-xl font-bold mb-4">Reset Password</h3>
-            <p class="text-gray-400 mb-4 text-sm">Enter your email and we'll send you a link to reset your password.</p>
+            <p class="text-gray-400 mb-4 text-sm">Enter your email, and we'll send you a link to reset your password.</p>
             <form id="forgot-password-form">
                 <input type="email" id="forgot-email" class="form-input w-full rounded-lg p-3 mb-4" placeholder="your@email.com" required>
                 <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition">Send Reset Link</button>
@@ -78,26 +108,33 @@
     
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+        
+        // --- CONFIGURATION ---
         const supabaseUrl = 'https://mmmaqiqtvkjpwtdlqzrt.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIJ1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIEAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIEAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
         const supabase = createClient(supabaseUrl, supabaseKey);
 
+        // --- DOM ELEMENTS ---
         const signinForm = document.getElementById('signin-form');
         const signupForm = document.getElementById('signup-form');
         const signinTabBtn = document.getElementById('signin-tab-btn');
         const signupTabBtn = document.getElementById('signup-tab-btn');
         const formMessage = document.getElementById('form-message');
-        const signupBtn = document.getElementById('signup-btn');
-        const signupBtnText = document.getElementById('signup-btn-text');
-        const signupSpinner = document.getElementById('signup-spinner');
-        
         const forgotPasswordModal = document.getElementById('forgot-password-modal');
         const forgotPasswordLink = document.getElementById('forgot-password-link');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const forgotPasswordForm = document.getElementById('forgot-password-form');
+
+        // --- FUNCTIONS ---
+        function showMessage(message, isError = true) {
+            formMessage.textContent = message;
+            formMessage.className = isError 
+                ? 'bg-red-500/20 text-red-400 p-3 rounded-md mb-4 text-sm text-center' 
+                : 'bg-green-500/20 text-green-400 p-3 rounded-md mb-4 text-sm text-center';
+        }
         
-        function showForm(formName) {
-            if (formName === 'signin') {
+        function switchTabs(show) {
+            if (show === 'signin') {
                 signinForm.classList.remove('hidden');
                 signupForm.classList.add('hidden');
                 signinTabBtn.classList.add('active');
@@ -108,74 +145,68 @@
                 signinTabBtn.classList.remove('active');
                 signupTabBtn.classList.add('active');
             }
-        }
-        
-        signinTabBtn.addEventListener('click', () => showForm('signin'));
-        signupTabBtn.addEventListener('click', () => showForm('signup'));
-
-        function showMessage(message, isError = true) {
-            formMessage.textContent = message;
-            formMessage.className = isError 
-                ? 'bg-red-500/20 text-red-400 p-3 rounded-md mb-4 text-sm' 
-                : 'bg-green-500/20 text-green-400 p-3 rounded-md mb-4 text-sm';
-            formMessage.classList.remove('hidden');
+            formMessage.classList.add('hidden');
         }
 
+        // --- EVENT LISTENERS ---
+
+        // Handle Sign In form submission
         signinForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('signin-email').value;
             const password = document.getElementById('signin-password').value;
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) showMessage(error.message);
-            else window.location.href = 'dashboard.html';
-        });
-        
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
             
-            signupBtn.disabled = true;
-            signupBtnText.classList.add('hidden');
-            signupSpinner.classList.remove('hidden');
-
-            try {
-                const fp = await FingerprintJS.load();
-                const result = await fp.get();
-                const visitorId = result.visitorId;
-
-                const { data, error } = await supabase.functions.invoke('signup-with-trial', {
-                    body: {
-                        email: document.getElementById('signup-email').value,
-                        password: document.getElementById('signup-password').value,
-                        fingerprint: visitorId
-                    },
-                });
-                
-                if (error) throw new Error(error.message);
-                if (!data.success) throw new Error(data.message);
-
-                showMessage('Sign up successful! Please check your email to verify your account.', false);
-            } catch (err) {
-                showMessage(err.message || 'An unexpected error occurred.');
-            } finally {
-                signupBtn.disabled = false;
-                signupBtnText.classList.remove('hidden');
-                signupSpinner.classList.add('hidden');
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                showMessage(error.message);
+            } else {
+                // CHANGED: Redirect to index.html on successful login
+                window.location.href = 'index.html';
             }
         });
         
-        // Forgot Password Logic
+        // Handle Sign Up form submission
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            
+            const { error } = await supabase.auth.signUp({ email, password });
+            
+            if (error) {
+                showMessage(error.message);
+            } else {
+                showMessage("Account created! Please check your email to verify your account.", false);
+                // After showing the message, we can redirect them to the home page in a few seconds
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 3000);
+            }
+        });
+        
+        // Logic for the Forgot Password modal
         forgotPasswordLink.addEventListener('click', (e) => { e.preventDefault(); forgotPasswordModal.classList.remove('hidden'); });
         closeModalBtn.addEventListener('click', () => forgotPasswordModal.classList.add('hidden'));
         forgotPasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('forgot-email').value;
+            
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: `${window.location.origin}/update-password.html`
             });
+
             forgotPasswordModal.classList.add('hidden');
-            if(error) showMessage(error.message);
-            else showMessage('Password reset link sent! Please check your email.', false);
+            if(error) {
+                showMessage(error.message);
+            } else {
+                showMessage("Password reset link has been sent! Please check your email.", false);
+            }
         });
+
+        // Handle tab button clicks
+        signinTabBtn.addEventListener('click', () => switchTabs('signin'));
+        signupTabBtn.addEventListener('click', () => switchTabs('signup'));
 
     </script>
 </body>
