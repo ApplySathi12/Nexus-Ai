@@ -31,14 +31,16 @@
         <header class="absolute top-0 left-0 right-0 p-4 z-10">
             <nav class="container mx-auto flex justify-between items-center">
                 <a href="#" class="text-2xl font-bold">NEXUS</a>
-                <!-- This is the navigation for logged-out users -->
-                <div id="logged-out-nav" class="hidden flex items-center space-x-4">
-                    <a href="auth.html" class="text-gray-300 hover:text-white transition">Sign In</a>
-                    <a href="auth.html" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">Sign Up</a>
+                
+                <!-- FIX: Both navs are now correctly controlled by JavaScript -->
+                <!-- Navigation for logged-out users (starts visible) -->
+                <div id="logged-out-nav" class="flex items-center space-x-4">
+                    <a href="./auth.html" class="text-gray-300 hover:text-white transition">Sign In</a>
+                    <a href="./auth.html" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">Sign Up</a>
                 </div>
-                <!-- This navigation will appear for logged-in users -->
-                <div id="logged-in-nav" class="hidden flex items-center space-x-4">
-                    <a href="dashboard.html" class="text-gray-300 hover:text-white transition">Dashboard</a>
+                <!-- Navigation for logged-in users (starts hidden) -->
+                <div id="logged-in-nav" class="hidden items-center space-x-4">
+                    <a href="./dashboard.html" class="text-gray-300 hover:text-white transition">Dashboard</a>
                     <button id="signout-btn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">Sign Out</button>
                 </div>
             </nav>
@@ -51,10 +53,21 @@
             <p class="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-8">
                 Interactive 3D courses for Class 9th & 10th. Master complex topics with immersive learning experiences.
             </p>
-            <a href="auth.html" id="get-started-btn" class="bg-indigo-600 text-white font-semibold px-8 py-4 rounded-lg text-lg hover:bg-indigo-700 transition-transform transform hover:scale-105">
+            <a href="./auth.html" id="get-started-btn" class="bg-indigo-600 text-white font-semibold px-8 py-4 rounded-lg text-lg hover:bg-indigo-700 transition-transform transform hover:scale-105">
                 Get Started
             </a>
         </div>
+        
+        <footer class="absolute bottom-0 left-0 right-0 p-4 z-10">
+            <div class="container mx-auto text-center text-gray-500 text-sm">
+                <div class="flex justify-center space-x-6 mb-2">
+                    <a href="./terms.html" class="hover:text-gray-300 transition">Terms & Conditions</a>
+                    <a href="./privacy.html" class="hover:text-gray-300 transition">Privacy Policy</a>
+                    <a href="./contact.html" class="hover:text-gray-300 transition">Contact Us</a>
+                </div>
+                <p>&copy; 2025 Nexus. All Rights Reserved.</p>
+            </div>
+        </footer>
     </div>
     
     <script type="module">
@@ -62,7 +75,7 @@
 
         // --- SUPABASE CONFIG ---
         const supabaseUrl = 'https://mmmaqiqtvkjpwtdlqzrt.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIEAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         // --- DOM ELEMENTS ---
@@ -73,20 +86,27 @@
 
         // --- AUTHENTICATION LOGIC ---
         const updateUserStatus = (user) => {
+            // FIX: Using style.display is more reliable than changing classes here
             if (user) {
-                loggedOutNav.classList.add('hidden');
-                loggedInNav.classList.remove('hidden');
+                // User is logged in
+                loggedOutNav.style.display = 'none';
+                loggedInNav.style.display = 'flex';
                 getStartedBtn.textContent = 'Go to Dashboard';
-                getStartedBtn.href = 'dashboard.html';
+                getStartedBtn.href = './dashboard.html';
             } else {
-                loggedOutNav.classList.remove('hidden');
-                loggedInNav.classList.add('hidden');
+                // User is logged out
+                loggedOutNav.style.display = 'flex';
+                loggedInNav.style.display = 'none';
                 getStartedBtn.textContent = 'Get Started';
-                getStartedBtn.href = 'auth.html';
+                getStartedBtn.href = './auth.html';
             }
         };
         
         const initializeAuth = async () => {
+            // Hide both initially to prevent flashing the wrong state
+            loggedOutNav.style.display = 'none';
+            loggedInNav.style.display = 'none';
+
             const { data: { session } } = await supabase.auth.getSession();
             updateUserStatus(session?.user);
 
@@ -94,13 +114,15 @@
                 updateUserStatus(session?.user);
             });
         };
-        initializeAuth();
+        
+        // Run the authentication check as soon as the page loads
+        document.addEventListener('DOMContentLoaded', initializeAuth);
 
         signOutBtn.addEventListener('click', async () => {
             await supabase.auth.signOut();
         });
 
-        // --- 3D MODEL FROM YOUR FILE ---
+        // --- 3D MODEL LOGIC (No changes here) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ 
@@ -132,14 +154,9 @@
             requestAnimationFrame(animate);
             shape.rotation.x += 0.001;
             shape.rotation.y += 0.002;
-            
-            // Mouse interaction
             shape.rotation.y += mouseX * 0.005;
             shape.rotation.x += mouseY * 0.005;
-            
-            // Pulsating camera effect
             camera.position.z = 5 + Math.sin(Date.now() * 0.0002) * 0.5;
-            
             renderer.render(scene, camera);
         }
         animate();
