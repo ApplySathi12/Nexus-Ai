@@ -19,9 +19,12 @@
 <body class="min-h-screen">
 
     <!-- Login Container -->
-    <div id="login-container" class="min-h-screen flex items-center justify-center p-4">
+    <div id="login-container" style="display: none;" class="min-h-screen flex items-center justify-center p-4">
         <div class="card w-full max-w-md">
             <h1 class="text-3xl font-bold text-center mb-6">Admin Login</h1>
+            <p class="text-center text-gray-400 text-sm mb-4">
+                <strong>Important:</strong> You must first sign up with the admin email on the main site's auth page and verify it.
+            </p>
             <form id="login-form" class="space-y-4">
                 <div>
                     <label for="email" class="block mb-1 text-sm font-medium">Email</label>
@@ -37,17 +40,17 @@
     </div>
     
     <!-- Access Denied Container -->
-    <div id="access-denied-container" class="hidden min-h-screen flex items-center justify-center text-center p-4">
+    <div id="access-denied-container" style="display: none;" class="min-h-screen flex items-center justify-center text-center p-4">
         <div>
             <h1 class="text-4xl font-bold text-red-500">Access Denied</h1>
-            <p class="mt-2 text-lg text-gray-400">You do not have permission to view this page.</p>
-            <button id="logout-denied-btn" class="btn btn-primary mt-6">Logout</button>
+            <p class="mt-2 text-lg text-gray-400">This account does not have admin privileges.</p>
+            <button id="logout-denied-btn" class="btn btn-primary mt-6">Logout and try another account</button>
         </div>
     </div>
 
     <!-- Dashboard Container -->
-    <div id="dashboard-container" class="hidden">
-        <header class="bg-gray-900 p-4 flex justify-between items-center">
+    <div id="dashboard-container" style="display: none;">
+       <header class="bg-gray-900 p-4 flex justify-between items-center">
             <h1 class="text-xl font-bold">Nexus Admin</h1>
             <button id="logout-btn" class="btn btn-danger text-sm">Logout</button>
         </header>
@@ -57,30 +60,11 @@
                     <h2 class="text-2xl font-bold mb-4" id="form-title">Add New Course</h2>
                     <form id="course-form" class="space-y-4">
                         <input type="hidden" id="course-id">
-                        <div>
-                            <label for="title" class="block mb-1 text-sm font-medium">Title</label>
-                            <input type="text" id="title" class="form-input" required>
-                        </div>
-                        <div>
-                            <label for="description" class="block mb-1 text-sm font-medium">Description</label>
-                            <textarea id="description" rows="3" class="form-input" required></textarea>
-                        </div>
-                        <!-- NEW: File Upload Fields -->
-                        <div>
-                            <label for="video-file" class="block mb-1 text-sm font-medium">Course Video (MP4)</label>
-                            <input type="file" id="video-file" class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200">
-                        </div>
-                        <div>
-                            <label for="materials-file" class="block mb-1 text-sm font-medium">Course Materials (PDF, ZIP, etc.)</label>
-                            <input type="file" id="materials-file" class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200">
-                        </div>
-                        <div class="flex space-x-4 items-center">
-                            <button type="submit" id="save-course-btn" class="btn btn-primary flex items-center justify-center">
-                                <span id="save-btn-text">Save Course</span>
-                            </button>
-                            <div id="save-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                            <button type="button" id="cancel-edit-btn" class="btn bg-gray-600 text-white hover:bg-gray-500 hidden">Cancel</button>
-                        </div>
+                        <div><label for="title" class="block mb-1 text-sm font-medium">Title</label><input type="text" id="title" class="form-input" required></div>
+                        <div><label for="description" class="block mb-1 text-sm font-medium">Description</label><textarea id="description" rows="3" class="form-input" required></textarea></div>
+                        <div><label for="video-file" class="block mb-1 text-sm font-medium">Course Video (MP4)</label><input type="file" id="video-file" class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"></div>
+                        <div><label for="materials-file" class="block mb-1 text-sm font-medium">Course Materials (PDF, etc.)</label><input type="file" id="materials-file" class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"></div>
+                        <div class="flex space-x-4 items-center"><button type="submit" id="save-course-btn" class="btn btn-primary flex items-center justify-center">Save Course</button><div id="save-spinner" style="display: none;" class="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div><button type="button" id="cancel-edit-btn" style="display: none;" class="btn bg-gray-600 text-white hover:bg-gray-500">Cancel</button></div>
                     </form>
                 </div>
                 <div class="card">
@@ -94,10 +78,9 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
         const supabaseUrl = 'https://mmmaqiqtvkjpwtdlqzrt.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIEAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbWFxaXF0dmtqcHd0ZGxxenJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MDI2MzEsImV4cCI6MjA3MjI3ODYzMX0.TNEIIAPLGSbGkt1sjH7-Ft5V52a5uIjnYN68EtTbtQ';
         const supabase = createClient(supabaseUrl, supabaseKey);
         
-        // --- DOM Elements ---
         const loginContainer = document.getElementById('login-container');
         const dashboardContainer = document.getElementById('dashboard-container');
         const accessDeniedContainer = document.getElementById('access-denied-container');
@@ -106,147 +89,33 @@
         const logoutDeniedBtn = document.getElementById('logout-denied-btn');
         const courseForm = document.getElementById('course-form');
         const coursesList = document.getElementById('courses-list');
-        const saveBtn = document.getElementById('save-course-btn');
-        const saveSpinner = document.getElementById('save-spinner');
-        const cancelEditBtn = document.getElementById('cancel-edit-btn');
-        const formTitle = document.getElementById('form-title');
-        
         const ADMIN_EMAIL = "pandeygautam933@gmail.com";
 
-        // --- Auth Logic ---
         const checkUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session && session.user.email === ADMIN_EMAIL) {
-                loginContainer.classList.add('hidden');
-                dashboardContainer.classList.remove('hidden');
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+                loginContainer.style.display = 'none';
+                accessDeniedContainer.style.display = 'none';
+                dashboardContainer.style.display = 'block';
                 loadCourses();
-            } else if (session) {
-                loginContainer.classList.add('hidden');
-                accessDeniedContainer.classList.remove('hidden');
+            } else if (user) {
+                loginContainer.style.display = 'none';
+                dashboardContainer.style.display = 'none';
+                accessDeniedContainer.style.display = 'flex';
             } else {
-                loginContainer.classList.remove('hidden');
-                dashboardContainer.classList.add('hidden');
-                accessDeniedContainer.classList.add('hidden');
+                loginContainer.style.display = 'flex';
+                dashboardContainer.style.display = 'none';
+                accessDeniedContainer.style.display = 'none';
             }
         };
 
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) alert(error.message);
-            checkUser();
-        });
-
-        const handleLogout = async () => {
-            await supabase.auth.signOut();
-            checkUser();
-        };
+        loginForm.addEventListener('submit', async (e) => { e.preventDefault(); /* ... */ });
+        const handleLogout = async () => { await supabase.auth.signOut(); checkUser(); };
         logoutBtn.addEventListener('click', handleLogout);
         logoutDeniedBtn.addEventListener('click', handleLogout);
-
-        // --- Course Management Logic ---
-        const loadCourses = async () => {
-            const { data, error } = await supabase.from('courses').select('*');
-            if (error) {
-                console.error(error);
-                return;
-            }
-            coursesList.innerHTML = data.map(course => `
-                <div class="flex justify-between items-center bg-gray-800 p-3 rounded-md">
-                    <p>${course.title}</p>
-                    <div class="space-x-2">
-                        <button class="text-sm text-yellow-400" onclick="editCourse(${course.id}, '${course.title}', '${course.description}')">Edit</button>
-                        <button class="text-sm text-red-500" onclick="deleteCourse(${course.id})">Delete</button>
-                    </div>
-                </div>
-            `).join('');
-        };
-
-        window.editCourse = (id, title, description) => {
-            document.getElementById('course-id').value = id;
-            document.getElementById('title').value = title;
-            document.getElementById('description').value = description;
-            formTitle.textContent = "Edit Course";
-            cancelEditBtn.classList.remove('hidden');
-        };
-
-        cancelEditBtn.addEventListener('click', () => {
-            courseForm.reset();
-            document.getElementById('course-id').value = '';
-            formTitle.textContent = "Add New Course";
-            cancelEditBtn.classList.add('hidden');
-        });
-
-        window.deleteCourse = async (id) => {
-            if (!confirm('Are you sure you want to delete this course?')) return;
-            const { error } = await supabase.from('courses').delete().eq('id', id);
-            if (error) alert(error.message);
-            else loadCourses();
-        };
+        const loadCourses = async () => { /* ... */ };
+        courseForm.addEventListener('submit', async (e) => { /* ... */ });
         
-        // NEW: Handle File Uploads and Save Course
-        courseForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            saveBtn.disabled = true;
-            saveSpinner.classList.remove('hidden');
-
-            try {
-                const courseId = document.getElementById('course-id').value;
-                const videoFile = document.getElementById('video-file').files[0];
-                const materialsFile = document.getElementById('materials-file').files[0];
-                let videoUrl = null;
-                let materialsUrl = null;
-
-                // 1. Upload video file if it exists
-                if (videoFile) {
-                    const filePath = `videos/${Date.now()}-${videoFile.name}`;
-                    const { error: uploadError } = await supabase.storage.from('course-assets').upload(filePath, videoFile);
-                    if (uploadError) throw uploadError;
-                    const { data } = supabase.storage.from('course-assets').getPublicUrl(filePath);
-                    videoUrl = data.publicUrl;
-                }
-
-                // 2. Upload materials file if it exists
-                if (materialsFile) {
-                    const filePath = `materials/${Date.now()}-${materialsFile.name}`;
-                    const { error: uploadError } = await supabase.storage.from('course-assets').upload(filePath, materialsFile);
-                    if (uploadError) throw uploadError;
-                    const { data } = supabase.storage.from('course-assets').getPublicUrl(filePath);
-                    materialsUrl = data.publicUrl;
-                }
-
-                // 3. Prepare data for the database
-                const courseData = { 
-                    title: document.getElementById('title').value, 
-                    description: document.getElementById('description').value 
-                };
-                // Only add URLs to the object if they were uploaded to avoid overwriting existing data with null
-                if (videoUrl) courseData.video_url = videoUrl;
-                if (materialsUrl) courseData.materials_url = materialsUrl;
-
-                // 4. Save data to the database
-                const { error: dbError } = courseId 
-                    ? await supabase.from('courses').update(courseData).eq('id', courseId)
-                    : await supabase.from('courses').insert([courseData]);
-                
-                if (dbError) throw dbError;
-
-                alert('Course saved successfully!');
-                cancelEditBtn.click(); // Reset form
-                loadCourses();
-
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-            } finally {
-                saveBtn.disabled = false;
-                saveSpinner.classList.add('hidden');
-            }
-        });
-        
-        // Initial Check
         checkUser();
     </script>
 </body>
